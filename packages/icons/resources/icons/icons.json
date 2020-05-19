@@ -3330,5 +3330,105 @@
     "tags": "clock, day, hours, minutes, seconds",
     "group": "interface",
     "content": "\\e901"
+  },
+  {
+    "displayName": "Archive",
+    "iconName": "archive",
+    "tags": "compress, compression, zip, bundle",
+    "group": "action",
+    "content": "\\e907"
+  },
+  {
+    "displayName": "Unarchive",
+    "iconName": "unarchive",
+    "tags": "compress, compression, zip, bundle, uncompress, unzip, unbundle",
+    "group": "action",
+    "content": "\\e906"
+  },
+  {
+    "displayName": "Data lineage",
+    "iconName": "data-lineage",
+    "tags": "flow, rectangle, graph, downstream, upstream, propagation",
+    "group": "interface",
+    "content": "\\e908"
+  },
+  {
+    "displayName": "New drawing",
+    "iconName": "new-drawing",
+    "tags": "selection, area, highlight, sketch",
+    "group": "interface",
+    "content": "\\e905"
+  },
+  {
+    "displayName": "Signal search",
+    "iconName": "signal-search",
+    "tags": "signal, communication, radio, mast",
+    "group": "action",
+    "content": "\\e909"
+  },
+  {
+    "displayName": "Bring in data",
+    "iconName": "bring-data",
+    "tags": "copy, duplicate, add, data, bring",
+    "group": "action",
+    "content": "\\e90a"
+  },
+  {
+    "displayName": "Tractor",
+    "iconName": "tractor",
+    "tags": "tractor, automobile, vehicle, farm, farming",
+    "group": "interface",
+    "content": "\\e90c"
+  },
+  {
+    "displayName": "Truck",
+    "iconName": "truck",
+    "tags": "truck, automobile, vehicle, car, van, drive, ride, distance, navigation, directions",
+    "group": "interface",
+    "content": "\\e90b"
+  },
+  {
+    "displayName": "Diagnosis",
+    "iconName": "diagnosis",
+    "tags": "doctor, science, heart, stethoscope, medical, examination",
+    "group": "interface",
+    "content": "\\e90d"
+  },
+  {
+    "displayName": "Lab test",
+    "iconName": "lab-test",
+    "tags": "science, beaker, chemistry, mixing, scientist",
+    "group": "interface",
+    "content": "\\e90e"
+  },
+  {
+    "displayName": "Virus",
+    "iconName": "virus",
+    "tags": "virus, doctor, medical, examination, disease, pandemic, sick",
+    "group": "interface"
+  },
+  {
+    "displayName": "Inherited group membership",
+    "iconName": "inherited-group",
+    "tags": "group, inheritance, inherited, membership, people",
+    "group": "interface"
+  },
+  {
+    "displayName": "Hat",
+    "iconName": "hat",
+    "tags": "head, clothing, cap, fedora, role, level, permission",
+    "group": "miscellaneous"
+  },
+  {
+    "displayName": "Cycle",
+    "iconName": "cycle",
+    "tags": "cycle, bike, cyclist, biker, ride, rider, transportation",
+    "group": "interface"
+  },
+  {
+    "displayName": "Route",
+    "iconName": "route",
+    "tags": "route, destination, travel, journey, road, transportation",
+    "group": "interface"
   }
 ]

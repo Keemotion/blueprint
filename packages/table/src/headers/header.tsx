@@ -21,8 +21,9 @@ import * as React from "react";
 import { Grid } from "../common";
 import { IFocusedCellCoordinates } from "../common/cell";
 import * as Classes from "../common/classes";
+import { CLASSNAME_EXCLUDED_FROM_TEXT_MEASUREMENT } from "../common/utils";
 import { DragEvents } from "../interactions/dragEvents";
-import { IClientCoordinates, ICoordinateData } from "../interactions/draggable";
+import { IClientCoordinates, ICoordinateData } from "../interactions/dragTypes";
 import { DragReorderable, IReorderableProps } from "../interactions/reorderable";
 import { Resizable } from "../interactions/resizable";
 import { ILockableLayout, Orientation } from "../interactions/resizeHandle";
@@ -249,7 +250,9 @@ export class Header extends React.Component<IInternalHeaderProps, IHeaderState> 
     public shouldComponentUpdate(nextProps?: IInternalHeaderProps, nextState?: IHeaderState) {
         return (
             !CoreUtils.shallowCompareKeys(this.state, nextState) ||
-            !CoreUtils.shallowCompareKeys(this.props, nextProps, { exclude: SHALLOW_COMPARE_PROP_KEYS_BLACKLIST }) ||
+            !CoreUtils.shallowCompareKeys(this.props, nextProps, {
+                exclude: SHALLOW_COMPARE_PROP_KEYS_BLACKLIST,
+            }) ||
             !CoreUtils.deepCompareKeys(this.props, nextProps, SHALLOW_COMPARE_PROP_KEYS_BLACKLIST)
         );
     }
@@ -306,6 +309,9 @@ export class Header extends React.Component<IInternalHeaderProps, IHeaderState> 
         const { getIndexClass, selectedRegions } = this.props;
 
         const cell = this.props.headerCellRenderer(index);
+        if (cell == null) {
+            return null;
+        }
 
         const isLoading = cell.props.loading != null ? cell.props.loading : this.props.loading;
         const isSelected = this.props.isCellSelected(index);
@@ -381,7 +387,9 @@ export class Header extends React.Component<IInternalHeaderProps, IHeaderState> 
             : this.wrapInDragReorderable(
                   index,
                   <div className={Classes.TABLE_REORDER_HANDLE_TARGET}>
-                      <div className={Classes.TABLE_REORDER_HANDLE}>
+                      <div
+                          className={classNames(Classes.TABLE_REORDER_HANDLE, CLASSNAME_EXCLUDED_FROM_TEXT_MEASUREMENT)}
+                      >
                           <Icon icon="drag-handle-vertical" />
                       </div>
                   </div>,

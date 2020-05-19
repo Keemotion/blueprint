@@ -40,6 +40,13 @@ describe("<EditableText>", () => {
         assert.isFalse(editable.state("isEditing"));
     });
 
+    it("allows resetting controlled value to undefined or null", () => {
+        const editable = shallow(<EditableText isEditing={false} placeholder="placeholder" value="alphabet" />);
+        assert.strictEqual(editable.text(), "alphabet");
+        editable.setProps({ value: null });
+        assert.strictEqual(editable.text(), "placeholder");
+    });
+
     describe("when editing", () => {
         it('renders <input type="text"> when editing', () => {
             const input = shallow(<EditableText isEditing={true} />).find("input");
@@ -190,7 +197,9 @@ describe("<EditableText>", () => {
 
         it("the full input box is highlighted when selectAllOnFocus is true", () => {
             const attachTo = document.createElement("div");
-            mount(<EditableText isEditing={true} selectAllOnFocus={true} value="alphabet" />, { attachTo });
+            mount(<EditableText isEditing={true} selectAllOnFocus={true} value="alphabet" />, {
+                attachTo,
+            });
             const input = attachTo.querySelector("input") as HTMLInputElement;
             assert.strictEqual(input.selectionStart, 0);
             assert.strictEqual(input.selectionEnd, 8);
@@ -288,10 +297,7 @@ describe("<EditableText>", () => {
         }
 
         function simulateHelper(wrapper: ReactWrapper<any, {}>, value: string, e: IFakeKeyboardEvent) {
-            wrapper
-                .find("textarea")
-                .simulate("change", { target: { value } })
-                .simulate("keydown", e);
+            wrapper.find("textarea").simulate("change", { target: { value } }).simulate("keydown", e);
         }
     });
 });

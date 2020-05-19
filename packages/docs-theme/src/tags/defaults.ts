@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-import * as React from "react";
-import * as tags from "./";
-
 import { ITag } from "@documentalist/client";
+import * as React from "react";
+import { CssExample } from "./css";
+import { Heading } from "./heading";
+import { SeeTag } from "./see";
+import { TypescriptExample } from "./typescript";
 
 export function createDefaultRenderers(): Record<string, React.ComponentType<ITag>> {
     return {
-        css: tags.CssExample,
-        heading: tags.Heading,
-        interface: tags.TypescriptExample,
+        css: CssExample,
+        heading: Heading,
+        interface: TypescriptExample,
         page: () => null,
-        see: tags.SeeTag,
+        see: SeeTag,
     };
 }

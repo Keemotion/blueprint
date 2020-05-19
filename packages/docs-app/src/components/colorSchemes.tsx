@@ -162,16 +162,8 @@ export class ColorScheme extends React.PureComponent<IColorSchemeProps, IColorSc
         if (diverging) {
             // Split the basePalette into left and right, including the middle color in both.
             // Create individual bezier scales for each side. We'll choose which to use later.
-            const leftColors = chroma
-                .bezier(basePalette.slice(0, 3))
-                .scale()
-                .mode("lab")
-                .correctLightness(true);
-            const rightColors = chroma
-                .bezier(basePalette.slice(2, 5))
-                .scale()
-                .mode("lab")
-                .correctLightness(true);
+            const leftColors = chroma.bezier(basePalette.slice(0, 3)).scale().mode("lab").correctLightness(true);
+            const rightColors = chroma.bezier(basePalette.slice(2, 5)).scale().mode("lab").correctLightness(true);
 
             const result: string[] = [];
             for (let i = 0; i < steps; i++) {
@@ -182,11 +174,7 @@ export class ColorScheme extends React.PureComponent<IColorSchemeProps, IColorSc
             }
             return result;
         } else {
-            return chroma
-                .bezier(basePalette)
-                .scale()
-                .correctLightness(true)
-                .colors(steps);
+            return chroma.bezier(basePalette).scale().correctLightness(true).colors(steps);
         }
     };
 
@@ -219,7 +207,10 @@ export class ColorScheme extends React.PureComponent<IColorSchemeProps, IColorSc
 export const QualitativeSchemePalette: React.SFC<{}> = () => <ColorBar colors={QUALITATIVE} />;
 
 export const SequentialSchemePalette: React.SFC<{}> = () => {
-    const schemes = [{ label: "Single hue", palettes: SINGLE_HUE }, { label: "Multi-hue", palettes: SEQUENTIAL }];
+    const schemes = [
+        { label: "Single hue", palettes: SINGLE_HUE },
+        { label: "Multi-hue", palettes: SEQUENTIAL },
+    ];
     return <ColorScheme schemes={schemes} />;
 };
 

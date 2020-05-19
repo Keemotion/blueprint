@@ -21,8 +21,8 @@ import DayPicker, { CaptionElementProps, DayModifiers, DayPickerProps, NavbarEle
 import { polyfill } from "react-lifecycles-compat";
 
 import * as DateClasses from "./common/classes";
+import { DateRange } from "./common/dateRange";
 import * as DateUtils from "./common/dateUtils";
-import DateRange = DateUtils.DateRange;
 
 import * as Errors from "./common/errors";
 import { MonthAndYear } from "./common/monthAndYear";
@@ -40,8 +40,6 @@ import { DatePickerNavbar } from "./datePickerNavbar";
 import { DateRangeSelectionStrategy } from "./dateRangeSelectionStrategy";
 import { IDateRangeShortcut, Shortcuts } from "./shortcuts";
 import { TimePicker } from "./timePicker";
-
-export { IDateRangeShortcut };
 
 export interface IDateRangePickerProps extends IDatePickerBaseProps, IProps {
     /**
@@ -223,7 +221,8 @@ export class DateRangePicker extends AbstractPureComponent2<IDateRangePickerProp
             hoverValue: [null, null],
             leftView,
             rightView,
-            selectedShortcutIndex: this.props.selectedShortcutIndex || -1,
+            selectedShortcutIndex:
+                this.props.selectedShortcutIndex !== undefined ? this.props.selectedShortcutIndex : -1,
             time,
             value,
         };
@@ -317,7 +316,14 @@ export class DateRangePicker extends AbstractPureComponent2<IDateRangePickerProp
         return [
             <Shortcuts
                 key="shortcuts"
-                {...{ allowSingleDayRange, maxDate, minDate, shortcuts, timePrecision, selectedShortcutIndex }}
+                {...{
+                    allowSingleDayRange,
+                    maxDate,
+                    minDate,
+                    selectedShortcutIndex,
+                    shortcuts,
+                    timePrecision,
+                }}
                 onShortcutClick={this.handleShortcutClick}
             />,
             <Divider key="div" />,
@@ -348,7 +354,8 @@ export class DateRangePicker extends AbstractPureComponent2<IDateRangePickerProp
     }
 
     private handleTimeChange = (newTime: Date, dateIndex: number) => {
-        Utils.safeInvoke(this.props.timePickerProps.onChange, newTime);
+        this.props.timePickerProps?.onChange?.(newTime);
+
         const { value, time } = this.state;
         const newValue = DateUtils.getDateTime(
             value[dateIndex] != null ? DateUtils.clone(value[dateIndex]) : new Date(),
@@ -358,7 +365,7 @@ export class DateRangePicker extends AbstractPureComponent2<IDateRangePickerProp
         newDateRange[dateIndex] = newValue;
         const newTimeRange: DateRange = [time[0], time[1]];
         newTimeRange[dateIndex] = newTime;
-        Utils.safeInvoke(this.props.onChange, newDateRange);
+        this.props.onChange?.(newDateRange);
         this.setState({ value: newDateRange, time: newTimeRange });
     };
 
@@ -704,7 +711,7 @@ function getStateChange(
             // If the selected month isn't in either of the displayed months, then
             //   - set the left DayPicker to be the selected month
             //   - set the right DayPicker to +1
-            if (nextValueStartView.isSameMonth(nextValueEndView)) {
+            if (nextValueStartView.isSame(nextValueEndView)) {
                 if (leftView.isSame(nextValueStartView) || rightView.isSame(nextValueStartView)) {
                     // do nothing
                 } else {

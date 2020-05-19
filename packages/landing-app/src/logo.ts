@@ -417,7 +417,11 @@ export type ISegment = [Point, Point];
 export class Corner extends Transformable<Corner> {
     public static CORNER() {
         return new Corner(
-            [[P(), P().translate(-1, 0, 0)], [P(), P().translate(0, 1, 0)], [P(), P().translate(0, 0, -1)]],
+            [
+                [P(), P().translate(-1, 0, 0)],
+                [P(), P().translate(0, 1, 0)],
+                [P(), P().translate(0, 0, -1)],
+            ],
             P(),
         );
     }
@@ -520,7 +524,7 @@ export const T = {
         return t => callback(t === 0 ? 0 : Math.pow(e, 10 * (t - 1)));
     },
     EASE_IN_OUT: (callback: IAnimatedCallback): IAnimatedCallback => {
-        return t => callback((t *= 2) < 1 ? 1 / 2 * t * t * t * t : -1 / 2 * ((t -= 2) * t * t * t - 2));
+        return t => callback((t *= 2) < 1 ? (1 / 2) * t * t * t * t : (-1 / 2) * ((t -= 2) * t * t * t - 2));
     },
     EASE_IN_OUT_EXP: (e: number, callback: IAnimatedCallback): IAnimatedCallback => {
         return t => {
@@ -529,9 +533,9 @@ export const T = {
             } else if (t === 1) {
                 callback(1);
             } else if ((t *= 2) < 1) {
-                callback(1 / 2 * Math.pow(e, 10 * (t - 1)));
+                callback((1 / 2) * Math.pow(e, 10 * (t - 1)));
             } else {
-                callback(1 / 2 * (-Math.pow(e, -10 * --t) + 2));
+                callback((1 / 2) * (-Math.pow(e, -10 * --t) + 2));
             }
         };
     },
@@ -722,10 +726,7 @@ export class CanvasBuffer {
         if (bounds == null) {
             bounds = [0, 0, this.ctx.canvas.width, this.ctx.canvas.height];
         }
-        const args = []
-            .concat([this.ctx.canvas])
-            .concat(bounds)
-            .concat(bounds);
+        const args = [].concat([this.ctx.canvas]).concat(bounds).concat(bounds);
         ctx.drawImage.apply(ctx, args);
     }
 }
@@ -874,12 +875,7 @@ export class SceneRenderer extends CanvasRenderer {
             if (object instanceof Shape) {
                 const shape = object;
                 for (const face of shape.faces) {
-                    face.projected = face.points.map(point =>
-                        point
-                            .copy()
-                            .transform(transform)
-                            .round(),
-                    );
+                    face.projected = face.points.map(point => point.copy().transform(transform).round());
 
                     face.projectedCenter = P();
                     for (const p of face.projected) {
@@ -1100,7 +1096,13 @@ export function initializeLogo(canvas: HTMLCanvasElement, canvasBackground: HTML
             .timeline()
             .tween(0, () => model.restore().translate(0, -8, 0))
             .tween(offset + 100)
-            .tween(1000, T.EASE_OUT_EXP(2, T.INTERPOLATE(-8, 0, (t: number) => model.restore().translate(0, t, 0))));
+            .tween(
+                1000,
+                T.EASE_OUT_EXP(
+                    2,
+                    T.INTERPOLATE(-8, 0, (t: number) => model.restore().translate(0, t, 0)),
+                ),
+            );
     };
 
     slideDownAnimation(0, slideInGroups[0]);
@@ -1159,27 +1161,15 @@ export function initializeLogo(canvas: HTMLCanvasElement, canvasBackground: HTML
             .multiply(Quaternion.xyAlt(accumX.value, -accumY.value).toMatrix())
             .multiply(M().translate(-1, -1, -1));
 
-        explodeGroups[0]
-            .restore()
-            .translate(accumExploder[0].value, 0, 0)
-            .transform(rotate);
-        explodeGroups[1]
-            .restore()
-            .translate(0, 0, accumExploder[1].value)
-            .transform(rotate);
+        explodeGroups[0].restore().translate(accumExploder[0].value, 0, 0).transform(rotate);
+        explodeGroups[1].restore().translate(0, 0, accumExploder[1].value).transform(rotate);
         explodeGroups[2]
             .restore()
             .translate(accumExploder[2].value, -2 * accumExploder[2].value, -accumExploder[2].value)
             .transform(rotate);
 
-        shadowGroups[0]
-            .restore()
-            .translate(accumExploder[0].value, SHADOW_DEPTH, 0)
-            .transform(rotate);
-        shadowGroups[1]
-            .restore()
-            .translate(0, SHADOW_DEPTH, accumExploder[1].value)
-            .transform(rotate);
+        shadowGroups[0].restore().translate(accumExploder[0].value, SHADOW_DEPTH, 0).transform(rotate);
+        shadowGroups[1].restore().translate(0, SHADOW_DEPTH, accumExploder[1].value).transform(rotate);
         shadowGroups[2]
             .restore()
             .translate(accumExploder[2].value, SHADOW_DEPTH, -accumExploder[2].value)

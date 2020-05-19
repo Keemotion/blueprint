@@ -114,10 +114,7 @@ describe("<TagInput>", () => {
         const onRemove = sinon.spy();
         // requires full mount to support data attributes and parentElement
         const wrapper = mount(<TagInput onRemove={onRemove} values={VALUES} />);
-        wrapper
-            .find("button")
-            .at(1)
-            .simulate("click");
+        wrapper.find("button").at(1).simulate("click");
         assert.isTrue(onRemove.calledOnce);
         assert.sameMembers(onRemove.args[0], [VALUES[1], 1]);
     });
@@ -315,6 +312,33 @@ describe("<TagInput>", () => {
             assert.sameMembers(onRemove.args[0], [VALUES[1], 1]);
         });
 
+        it("pressing left arrow key navigates active item and delete removes it", () => {
+            const onRemove = sinon.spy();
+            const wrapper = mount(<TagInput onRemove={onRemove} values={VALUES} />);
+            // select and remove middle item
+            wrapper
+                .find("input")
+                .simulate("keydown", { which: Keys.ARROW_LEFT })
+                .simulate("keydown", { which: Keys.ARROW_LEFT })
+                .simulate("keydown", { which: Keys.DELETE });
+
+            // in this case we're not moving into the previous item but
+            // we rather "take the place" of the item we just removed
+            assert.equal(wrapper.state("activeIndex"), 1);
+            assert.isTrue(onRemove.calledOnce);
+            assert.sameMembers(onRemove.args[0], [VALUES[1], 1]);
+        });
+
+        it("pressing delete with no selection does nothing", () => {
+            const onRemove = sinon.spy();
+            const wrapper = mount(<TagInput onRemove={onRemove} values={VALUES} />);
+
+            wrapper.find("input").simulate("keydown", { which: Keys.DELETE });
+
+            assert.equal(wrapper.state("activeIndex"), -1);
+            assert.isTrue(onRemove.notCalled);
+        });
+
         it("pressing right arrow key in initial state does nothing", () => {
             const wrapper = mount(<TagInput values={VALUES} />);
             wrapper.find("input").simulate("keydown", { which: Keys.ARROW_RIGHT });
@@ -351,10 +375,7 @@ describe("<TagInput>", () => {
         it("is invoked when a tag is removed by clicking", () => {
             const onChange = sinon.stub();
             const wrapper = mount(<TagInput onChange={onChange} values={VALUES} />);
-            wrapper
-                .find("button")
-                .at(1)
-                .simulate("click");
+            wrapper.find("button").at(1).simulate("click");
             assert.isTrue(onChange.calledOnce);
             assert.deepEqual(onChange.args[0][0], [VALUES[0], VALUES[2]]);
         });
@@ -500,13 +521,7 @@ describe("<TagInput>", () => {
             wrapper.childAt(0).hasClass(Classes.DISABLED),
             `.${Classes.DISABLED} should be applied to tag-input`,
         );
-        assert.isTrue(
-            wrapper
-                .find(`.${Classes.INPUT_GHOST}`)
-                .first()
-                .prop("disabled"),
-            "input should be disabled",
-        );
+        assert.isTrue(wrapper.find(`.${Classes.INPUT_GHOST}`).first().prop("disabled"), "input should be disabled");
         wrapper.find(Tag).forEach(tag => {
             assert.lengthOf(tag.find("." + Classes.TAG_REMOVE), 0, "tag should not have tag-remove button");
         });
@@ -584,10 +599,7 @@ function runKeyPressTest(callbackName: "onKeyDown" | "onKeyUp", startIndex: numb
     wrapper.setState({ activeIndex: startIndex });
 
     const eventName = callbackName === "onKeyDown" ? "keydown" : "keyup";
-    wrapper
-        .find("input")
-        .simulate("focus")
-        .simulate(eventName, { which: Keys.ENTER });
+    wrapper.find("input").simulate("focus").simulate(eventName, { which: Keys.ENTER });
 
     assert.strictEqual(callbackSpy.callCount, 1, "container callback call count");
     assert.strictEqual(callbackSpy.firstCall.args[0].which, Keys.ENTER, "first arg (event)");

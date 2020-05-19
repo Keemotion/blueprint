@@ -26,6 +26,7 @@ import {
     IToasterProps,
     IToastProps,
     Label,
+    NumericInput,
     Position,
     ProgressBar,
     Switch,
@@ -33,7 +34,7 @@ import {
     ToasterPosition,
 } from "@blueprintjs/core";
 import { Example, handleBooleanChange, handleStringChange, IExampleProps } from "@blueprintjs/docs-theme";
-import { IBlueprintExampleData } from "../../tags/reactExamples";
+import { IBlueprintExampleData } from "../../tags/types";
 
 type IToastDemo = IToastProps & { button: string };
 
@@ -128,13 +129,23 @@ export class ToastExample extends React.PureComponent<IExampleProps<IBlueprintEx
     }
 
     protected renderOptions() {
-        const { autoFocus, canEscapeKeyClear, position } = this.state;
+        const { autoFocus, canEscapeKeyClear, position, maxToasts } = this.state;
         return (
             <>
                 <H5>Props</H5>
                 <Label>
                     Position
                     <HTMLSelect value={position} onChange={this.handlePositionChange} options={POSITIONS} />
+                </Label>
+                <Label>
+                    Maximum active toasts
+                    <NumericInput
+                        allowNumericCharactersOnly={true}
+                        placeholder="No maximum!"
+                        min={1}
+                        value={maxToasts}
+                        onValueChange={this.handleValueChange}
+                    />
                 </Label>
                 <Switch label="Auto focus" checked={autoFocus} onChange={this.toggleAutoFocus} />
                 <Switch label="Can escape key clear" checked={canEscapeKeyClear} onChange={this.toggleEscapeKey} />
@@ -153,7 +164,9 @@ export class ToastExample extends React.PureComponent<IExampleProps<IBlueprintEx
             icon: "cloud-upload",
             message: (
                 <ProgressBar
-                    className={classNames("docs-toast-progress", { [Classes.PROGRESS_NO_STRIPES]: amount >= 100 })}
+                    className={classNames("docs-toast-progress", {
+                        [Classes.PROGRESS_NO_STRIPES]: amount >= 100,
+                    })}
                     intent={amount < 100 ? Intent.PRIMARY : Intent.SUCCESS}
                     value={amount / 100}
                 />
@@ -185,5 +198,13 @@ export class ToastExample extends React.PureComponent<IExampleProps<IBlueprintEx
                 this.toaster.show(this.renderProgress(progress), key);
             }
         }, 1000);
+    };
+
+    private handleValueChange = (value: number) => {
+        if (value) {
+            this.setState({ maxToasts: Math.max(1, value) });
+        } else {
+            this.setState({ maxToasts: undefined });
+        }
     };
 }

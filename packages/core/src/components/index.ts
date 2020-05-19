@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 
-declare function require(moduleName: string): any; // declare node.js "require" so that we can conditionally import
-if (typeof window !== "undefined" && typeof document !== "undefined") {
-    // we're in browser
-    // tslint:disable-next-line:no-var-requires
-    require("dom4"); // only import actual dom4 if we're in the browser (not server-compatible)
-    // we'll still need dom4 types for the TypeScript to compile, these are included in package.json
-}
+import "../common/configureDom4";
 
 import * as contextMenu from "./context-menu/contextMenu";
 export const ContextMenu = contextMenu;
@@ -50,7 +44,7 @@ export * from "./forms/textArea";
 export * from "./html/html";
 export * from "./html-select/htmlSelect";
 export * from "./html-table/htmlTable";
-export * from "./hotkeys/hotkeys";
+export * from "./hotkeys/index";
 export * from "./icon/icon";
 export * from "./menu/menu";
 export * from "./menu/menuDivider";

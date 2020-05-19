@@ -16,7 +16,7 @@
 
 import * as React from "react";
 
-import { DISPLAYNAME_PREFIX, IProps, Keys, Menu, Utils } from "@blueprintjs/core";
+import { AbstractComponent2, DISPLAYNAME_PREFIX, IProps, Keys, Menu, Utils } from "@blueprintjs/core";
 import {
     executeItemsEqual,
     getActiveItem,
@@ -30,6 +30,12 @@ import {
 } from "../../common";
 
 export interface IQueryListProps<T> extends IListItemsProps<T> {
+    /**
+     * Initial active item, useful if the parent component is controlling its selectedItem but
+     * not activeItem.
+     */
+    initialActiveItem?: T;
+
     /**
      * Callback invoked when user presses a key, after processing `QueryList`'s own key events
      * (up/down to navigate active item). This callback is passed to `renderer` and (along with
@@ -129,7 +135,7 @@ export interface IQueryListState<T> {
     query: string;
 }
 
-export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryListState<T>> {
+export class QueryList<T> extends AbstractComponent2<IQueryListProps<T>, IQueryListState<T>> {
     public static displayName = `${DISPLAYNAME_PREFIX}.QueryList`;
 
     public static defaultProps = {
@@ -169,9 +175,9 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
 
         this.state = {
             activeItem:
-                this.props.activeItem !== undefined
-                    ? this.props.activeItem
-                    : getFirstEnabledItem(filteredItems, props.itemDisabled),
+                props.activeItem !== undefined
+                    ? props.activeItem
+                    : props.initialActiveItem ?? getFirstEnabledItem(filteredItems, props.itemDisabled),
             createNewItem,
             filteredItems,
             query,
@@ -188,7 +194,7 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
             handleKeyDown: this.handleKeyDown,
             handleKeyUp: this.handleKeyUp,
             handlePaste: this.handlePaste,
-            handleQueryChange: this.handleQueryChange,
+            handleQueryChange: this.handleInputQueryChange,
             itemList: itemListRenderer({
                 ...spreadableState,
                 items,
@@ -204,13 +210,11 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
             this.setState({ activeItem: this.props.activeItem });
         }
 
-        // new query
         if (this.props.query != null && this.props.query !== prevProps.query) {
+            // new query
             this.setQuery(this.props.query, this.props.resetOnQuery, this.props);
-        }
-        // same query, but items in the list changed
-        else if (
-            this.props.query != null &&
+        } else if (
+            // same query (or uncontrolled query), but items in the list changed
             !Utils.shallowCompareKeys(this.props, prevProps, {
                 include: ["items", "itemListPredicate", "itemPredicate"],
             })
@@ -274,9 +278,13 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
             Utils.safeInvoke(props.onQueryChange, query);
         }
 
-        const filteredItems = getFilteredItems(query, props);
+        // Leading and trailing whitespace can be confusing to display, so we remove it when passing it
+        // to functions dealing with data, like createNewItemFromQuery. But we need the unaltered user-typed
+        // query to remain in state to be able to render controlled text inputs properly.
+        const trimmedQuery = query.trim();
+        const filteredItems = getFilteredItems(trimmedQuery, props);
         const createNewItem =
-            createNewItemFromQuery != null && query !== "" ? createNewItemFromQuery(query) : undefined;
+            createNewItemFromQuery != null && trimmedQuery !== "" ? createNewItemFromQuery(trimmedQuery) : undefined;
         this.setState({ createNewItem, filteredItems, query });
 
         // always reset active item if it's now filtered or disabled
@@ -291,6 +299,21 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
         }
     }
 
+    public setActiveItem(activeItem: T | ICreateNewItem | null) {
+        this.expectedNextActiveItem = activeItem;
+        if (this.props.activeItem === undefined) {
+            // indicate that the active item may need to be scrolled into view after update.
+            this.shouldCheckActiveItemInViewport = true;
+            this.setState({ activeItem });
+        }
+
+        if (isCreateNewItem(activeItem)) {
+            Utils.safeInvoke(this.props.onActiveItemChange, null, true);
+        } else {
+            Utils.safeInvoke(this.props.onActiveItemChange, activeItem, false);
+        }
+    }
+
     /** default `itemListRenderer` implementation */
     private renderItemList = (listProps: IItemListRendererProps<T>) => {
         const { initialContent, noResults } = this.props;
@@ -298,7 +321,9 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
         // omit noResults if createNewItemFromQuery and createNewItemRenderer are both supplied, and query is not empty
         const maybeNoResults = this.isCreateItemRendered() ? null : noResults;
         const menuContent = renderFilteredItems(listProps, maybeNoResults, initialContent);
-        const createItemView = this.isCreateItemRendered() ? this.renderCreateItemMenuItem(this.state.query) : null;
+        const createItemView = this.isCreateItemRendered()
+            ? this.renderCreateItemMenuItem(this.state.query.trim())
+            : null;
         if (menuContent == null && createItemView == null) {
             return null;
         }
@@ -464,7 +489,7 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
         Utils.safeInvoke(onKeyUp, event);
     };
 
-    private handleQueryChange = (event?: React.ChangeEvent<HTMLInputElement>) => {
+    private handleInputQueryChange = (event?: React.ChangeEvent<HTMLInputElement>) => {
         const query = event == null ? "" : event.target.value;
         this.setQuery(query);
         Utils.safeInvoke(this.props.onQueryChange, query, event);
@@ -486,21 +511,6 @@ export class QueryList<T> extends React.Component<IQueryListProps<T>, IQueryList
             }
         }
         return getFirstEnabledItem(this.state.filteredItems, this.props.itemDisabled, direction, startIndex);
-    }
-
-    private setActiveItem(activeItem: T | ICreateNewItem | null) {
-        this.expectedNextActiveItem = activeItem;
-        if (this.props.activeItem === undefined) {
-            // indicate that the active item may need to be scrolled into view after update.
-            this.shouldCheckActiveItemInViewport = true;
-            this.setState({ activeItem });
-        }
-
-        if (isCreateNewItem(activeItem)) {
-            Utils.safeInvoke(this.props.onActiveItemChange, null, true);
-        } else {
-            Utils.safeInvoke(this.props.onActiveItemChange, activeItem, false);
-        }
     }
 
     private isCreateItemRendered(): boolean {

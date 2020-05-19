@@ -150,16 +150,15 @@ export interface INumericInputProps extends IIntentProps, IProps {
     onButtonClick?(valueAsNumber: number, valueAsString: string): void;
 
     /** The callback invoked when the value changes due to typing, arrow keys, or button clicks. */
-    onValueChange?(valueAsNumber: number, valueAsString: string): void;
+    onValueChange?(valueAsNumber: number, valueAsString: string, inputElement: HTMLInputElement | null): void;
 }
 
 export interface INumericInputState {
+    prevMinProp?: number;
+    prevMaxProp?: number;
+    prevValueProp?: number | string;
     shouldSelectAfterUpdate: boolean;
     stepMaxPrecision: number;
-    value: string;
-}
-
-export interface INumericInputSnapshot {
     value: string;
 }
 
@@ -185,11 +184,7 @@ const NON_HTML_PROPS: Array<keyof INumericInputProps> = [
 type ButtonEventHandlers = Required<Pick<React.HTMLAttributes<Element>, "onKeyDown" | "onMouseDown">>;
 
 @polyfill
-export class NumericInput extends AbstractPureComponent2<
-    HTMLInputProps & INumericInputProps,
-    INumericInputState,
-    INumericInputSnapshot
-> {
+export class NumericInput extends AbstractPureComponent2<HTMLInputProps & INumericInputProps, INumericInputState> {
     public static displayName = `${DISPLAYNAME_PREFIX}.NumericInput`;
 
     public static VALUE_EMPTY = "";
@@ -208,10 +203,34 @@ export class NumericInput extends AbstractPureComponent2<
         value: NumericInput.VALUE_EMPTY,
     };
 
-    public static getDerivedStateFromProps(props: INumericInputProps) {
+    public static getDerivedStateFromProps(props: INumericInputProps, state: INumericInputState) {
+        const nextState = {
+            prevMaxProp: props.max,
+            prevMinProp: props.min,
+            prevValueProp: props.value,
+        };
+
+        const didMinChange = props.min !== state.prevMinProp;
+        const didMaxChange = props.max !== state.prevMaxProp;
+        const didBoundsChange = didMinChange || didMaxChange;
+
+        const didValuePropChange = props.value !== state.prevValueProp;
+        const value = getValueOrEmptyValue(didValuePropChange ? props.value : state.value);
+
         const stepMaxPrecision = NumericInput.getStepMaxPrecision(props);
 
-        return { stepMaxPrecision };
+        const sanitizedValue =
+            value !== NumericInput.VALUE_EMPTY
+                ? NumericInput.getSanitizedValue(value, stepMaxPrecision, props.min, props.max)
+                : NumericInput.VALUE_EMPTY;
+
+        // if a new min and max were provided that cause the existing value to fall
+        // outside of the new bounds, then clamp the value to the new valid range.
+        if (didBoundsChange && sanitizedValue !== state.value) {
+            return { ...nextState, stepMaxPrecision, value: sanitizedValue };
+        } else {
+            return { ...nextState, stepMaxPrecision, value };
+        }
     }
 
     private static CONTINUOUS_CHANGE_DELAY = 300;
@@ -225,6 +244,14 @@ export class NumericInput extends AbstractPureComponent2<
         } else {
             return Utils.countDecimalPlaces(props.stepSize);
         }
+    }
+
+    private static getSanitizedValue(value: string, stepMaxPrecision: number, min: number, max: number, delta = 0) {
+        if (!isValueNumeric(value)) {
+            return NumericInput.VALUE_EMPTY;
+        }
+        const nextValue = toMaxPrecision(parseFloat(value) + delta, stepMaxPrecision);
+        return clampValue(nextValue, min, max).toString();
     }
 
     public state: INumericInputState = {
@@ -242,24 +269,6 @@ export class NumericInput extends AbstractPureComponent2<
     private incrementButtonHandlers = this.getButtonEventHandlers(IncrementDirection.UP);
     private decrementButtonHandlers = this.getButtonEventHandlers(IncrementDirection.DOWN);
 
-    public getSnapshotBeforeUpdate(prevProps: INumericInputProps): INumericInputSnapshot {
-        const didMinChange = prevProps.min !== this.props.min;
-        const didMaxChange = prevProps.max !== this.props.max;
-        const didBoundsChange = didMinChange || didMaxChange;
-
-        const baseValue = prevProps.value !== this.props.value ? this.props.value : this.state.value;
-        const value = getValueOrEmptyValue(baseValue);
-
-        const sanitizedValue =
-            value !== NumericInput.VALUE_EMPTY
-                ? this.getSanitizedValue(value, /* delta */ 0, this.props.min, this.props.max)
-                : NumericInput.VALUE_EMPTY;
-
-        return {
-            value: didBoundsChange ? sanitizedValue : value,
-        };
-    }
-
     public render() {
         const { buttonPosition, className, fill, large } = this.props;
         const containerClasses = classNames(Classes.NUMERIC_INPUT, { [Classes.LARGE]: large }, className);
@@ -273,19 +282,17 @@ export class NumericInput extends AbstractPureComponent2<
         );
     }
 
-    public componentDidUpdate(
-        prevProps: INumericInputProps,
-        prevState: INumericInputState,
-        snapshot: INumericInputSnapshot,
-    ) {
-        super.componentDidUpdate(prevProps, prevState, snapshot);
+    public componentDidUpdate(prevProps: INumericInputProps, prevState: INumericInputState) {
+        super.componentDidUpdate(prevProps, prevState);
         if (this.state.shouldSelectAfterUpdate) {
             this.inputElement.setSelectionRange(0, this.state.value.length);
         }
 
-        this.setState({ value: snapshot.value });
-        if (this.state.value !== snapshot.value) {
-            this.invokeValueCallback(snapshot.value, this.props.onValueChange);
+        const didControlledValueChange = this.props.value !== prevProps.value;
+
+        if (!didControlledValueChange && this.state.value !== prevState.value) {
+            const { value: valueAsString } = this.state;
+            this.props.onValueChange?.(+valueAsString, valueAsString, this.inputElement);
         }
     }
 
@@ -318,12 +325,23 @@ export class NumericInput extends AbstractPureComponent2<
     // ==============
 
     private renderButtons() {
-        const { intent } = this.props;
+        const { intent, max, min } = this.props;
+        const { value } = this.state;
         const disabled = this.props.disabled || this.props.readOnly;
         return (
             <ButtonGroup className={Classes.FIXED} key="button-group" vertical={true}>
-                <Button disabled={disabled} icon="chevron-up" intent={intent} {...this.incrementButtonHandlers} />
-                <Button disabled={disabled} icon="chevron-down" intent={intent} {...this.decrementButtonHandlers} />
+                <Button
+                    disabled={disabled || (value !== "" && +value >= max)}
+                    icon="chevron-up"
+                    intent={intent}
+                    {...this.incrementButtonHandlers}
+                />
+                <Button
+                    disabled={disabled || (value !== "" && +value <= min)}
+                    icon="chevron-down"
+                    intent={intent}
+                    {...this.decrementButtonHandlers}
+                />
             </ButtonGroup>
         );
     }
@@ -376,7 +394,7 @@ export class NumericInput extends AbstractPureComponent2<
     private handleButtonClick = (e: React.MouseEvent | React.KeyboardEvent, direction: IncrementDirection) => {
         const delta = this.updateDelta(direction, e);
         const nextValue = this.incrementValue(delta);
-        this.invokeValueCallback(nextValue, this.props.onButtonClick);
+        this.props.onButtonClick?.(+nextValue, nextValue);
     };
 
     private startContinuousChange() {
@@ -401,7 +419,7 @@ export class NumericInput extends AbstractPureComponent2<
 
     private handleContinuousChange = () => {
         const nextValue = this.incrementValue(this.delta);
-        this.invokeValueCallback(nextValue, this.props.onButtonClick);
+        this.props.onButtonClick?.(+nextValue, nextValue);
     };
 
     // Callbacks - Input
@@ -421,9 +439,6 @@ export class NumericInput extends AbstractPureComponent2<
             const { value } = e.target as HTMLInputElement;
             const sanitizedValue = this.getSanitizedValue(value);
             this.setState({ value: sanitizedValue });
-            if (value !== sanitizedValue) {
-                this.invokeValueCallback(sanitizedValue, this.props.onValueChange);
-            }
         }
 
         Utils.safeInvoke(this.props.onBlur, e);
@@ -487,20 +502,17 @@ export class NumericInput extends AbstractPureComponent2<
         }
 
         this.setState({ shouldSelectAfterUpdate: false, value: nextValue });
-        this.invokeValueCallback(nextValue, this.props.onValueChange);
     };
-
-    private invokeValueCallback(value: string, callback: (valueAsNumber: number, valueAsString: string) => void) {
-        Utils.safeInvoke(callback, +value, value);
-    }
 
     private incrementValue(delta: number) {
         // pretend we're incrementing from 0 if currValue is empty
         const currValue = this.state.value || NumericInput.VALUE_ZERO;
         const nextValue = this.getSanitizedValue(currValue, delta);
 
-        this.setState({ shouldSelectAfterUpdate: this.props.selectAllOnIncrement, value: nextValue });
-        this.invokeValueCallback(nextValue, this.props.onValueChange);
+        this.setState({
+            shouldSelectAfterUpdate: this.props.selectAllOnIncrement,
+            value: nextValue,
+        });
 
         return nextValue;
     }
@@ -517,12 +529,14 @@ export class NumericInput extends AbstractPureComponent2<
         }
     }
 
-    private getSanitizedValue(value: string, delta = 0, min = this.props.min, max = this.props.max) {
-        if (!isValueNumeric(value)) {
-            return NumericInput.VALUE_EMPTY;
-        }
-        const nextValue = toMaxPrecision(parseFloat(value) + delta, this.state.stepMaxPrecision);
-        return clampValue(nextValue, min, max).toString();
+    private getSanitizedValue(value: string, delta = 0) {
+        return NumericInput.getSanitizedValue(
+            value,
+            this.state.stepMaxPrecision,
+            this.props.min,
+            this.props.max,
+            delta,
+        );
     }
 
     private updateDelta(direction: IncrementDirection, e: React.MouseEvent | React.KeyboardEvent) {
